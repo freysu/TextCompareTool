@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta http-equiv="X-UA-Compatible" content="ie=edge">
+		<title>文本对比工具</title>
+	</head>
+	<body>
+		<h1>文本对比工具</h1>
+		<div>
+			<textarea rows="" cols="" id="o" style="width: 100%; height: 8rem;" placeholder="文本1"></textarea>
+			<textarea rows="" cols="" id="s" style="width: 100%; height: 8rem;" placeholder="文本2"></textarea>
+			<textarea rows="" cols="" id="s1" style="width: 100%; height: 8rem;" placeholder="文本3"></textarea>
+		</div>
+		<div>
+			<button id="compare">一键对比全部文本</button>
+			<button id="clear">清空全部文本</button>
+			<button id="clearAll">清空全部文本和对比结果</button>
+
+		</div>
+
+		<div>
+			<p>1与2对比结果：</p>
+			<div id="box"></div>
+			<p>1与3对比结果：</p>
+			<div id="box1"></div>
+			<p>2与3对比结果：</p>
+			<div id="box2"></div>
+		</div>
+
+
+
+	</body>
+	<script>
+		let odata = document.querySelector("#o");
+		let sdata = document.querySelector("#s");
+		let sdata1 = document.querySelector("#s1");
+		document.querySelector("#compare").onclick = () => {
+			document.getElementById("box").innerHTML = eq({
+				value2: odata.value,
+				value1: sdata.value
+			}).value2
+			document.getElementById("box1").innerHTML = eq({
+				value2: odata.value,
+				value1: sdata1.value
+			}).value2
+			document.getElementById("box2").innerHTML = eq({
+				value2: sdata.value,
+				value1: sdata1.value
+			}).value2
+		}
+		document.querySelector("#clearAll").onclick = () => {
+			odata.value = ""
+			sdata.value = ""
+			sdata1.value = ""
+			document.getElementById("box").innerHTML = ""
+			document.getElementById("box1").innerHTML = ""
+			document.getElementById("box2").innerHTML = ""
+		}
+		document.querySelector("#clear").onclick = () => {
+			odata.value = ""
+			sdata.value = ""
+			sdata1.value = ""
+		}
+
+		function eq(op) {
+			if (!op) {
+				return op;
+			}
+			if (!op.eq_min) {
+				op.eq_min = 3;
+			}
+			if (!op.eq_index) {
+				op.eq_index = 5;
+			}
+			if (!op.value1 || !op.value2) {
+				return op;
+			}
+			var ps = {
+				v1_i: 0,
+				v1_new_value: "",
+				v2_i: 0,
+				v2_new_value: ""
+			};
+			while (ps.v1_i < op.value1.length && ps.v2_i < op.value2.length) {
+				if (op.value1[ps.v1_i] == op.value2[ps.v2_i]) {
+					//ps.v1_new_value += op.value1[ps.v1_i].replace(/</g,"<").replace(">",">");
+					ps.v2_new_value += op.value2[ps.v2_i]
+						.replace(/</g, "<")
+						.replace(">", ">");
+					ps.v1_i += 1;
+					ps.v2_i += 1;
+					// 值 2 增加的部分
+					if (ps.v1_i >= op.value1.length) {
+						ps.v2_new_value +=
+							"<del style='color:red'>" +
+							op.value2
+							.substr(ps.v2_i)
+							.replace(/</g, "<")
+							.replace(">", ">") +
+							"</del>";
+						break;
+					}
+					// 值 1 删除的部分
+					if (ps.v2_i >= op.value2.length) {
+						//ps.v1_new_value += "<span style='" + op.value1_style + "'> 值 1 多的" + op.value1.substr (ps.v1_i).replace (/</g,"<").replace (">",">") + "</span>";
+						ps.v2_new_value +=
+							"<span style='color:green'>" +
+							op.value1
+							.substr(ps.v1_i)
+							.replace(/</g, "<")
+							.replace(">", ">") +
+							"</span>";
+						break;
+					}
+				} else {
+					ps.v1_index = ps.v1_i + 1;
+					ps.v1_eq_length = 0;
+					ps.v1_eq_max = 0;
+					ps.v1_start = ps.v1_i + 1;
+					while (ps.v1_index < op.value1.length) {
+						if (
+							op.value1[ps.v1_index] == op.value2[ps.v2_i + ps.v1_eq_length]
+						) {
+							ps.v1_eq_length += 1;
+						} else if (ps.v1_eq_length > 0) {
+							if (ps.v1_eq_max < ps.v1_eq_length) {
+								ps.v1_eq_max = ps.v1_eq_length;
+								ps.v1_start = ps.v1_index - ps.v1_eq_length;
+							}
+							ps.v1_eq_length = 0;
+							break; // 只寻找最近的
+						}
+						ps.v1_index += 1;
+					}
+					if (ps.v1_eq_max < ps.v1_eq_length) {
+						ps.v1_eq_max = ps.v1_eq_length;
+						ps.v1_start = ps.v1_index - ps.v1_eq_length;
+					}
+
+					ps.v2_index = ps.v2_i + 1;
+					ps.v2_eq_length = 0;
+					ps.v2_eq_max = 0;
+					ps.v2_start = ps.v2_i + 1;
+					while (ps.v2_index < op.value2.length) {
+						if (
+							op.value2[ps.v2_index] == op.value1[ps.v1_i + ps.v2_eq_length]
+						) {
+							ps.v2_eq_length += 1;
+						} else if (ps.v2_eq_length > 0) {
+							if (ps.v2_eq_max < ps.v2_eq_length) {
+								ps.v2_eq_max = ps.v2_eq_length;
+								ps.v2_start = ps.v2_index - ps.v2_eq_length;
+							}
+							ps.v1_eq_length = 0;
+							break; // 只寻找最近的
+						}
+						ps.v2_index += 1;
+					}
+					if (ps.v2_eq_max < ps.v2_eq_length) {
+						ps.v2_eq_max = ps.v2_eq_length;
+						ps.v2_start = ps.v2_index - ps.v2_eq_length;
+					}
+					if (
+						ps.v1_eq_max < op.eq_min &&
+						ps.v1_start - ps.v1_i > op.eq_index
+					) {
+						ps.v1_eq_max = 0;
+					}
+					if (
+						ps.v2_eq_max < op.eq_min &&
+						ps.v2_start - ps.v2_i > op.eq_index
+					) {
+						ps.v2_eq_max = 0;
+					}
+					if (ps.v1_eq_max == 0 && ps.v2_eq_max == 0) {
+						// 两个值的字不同
+						//ps.v1_new_value += "<span style='" + op.value1_style + "'> 不同的" + op.value1 [ps.v1_i].replace (/</g,"<").replace (">",">") + "</span>";
+						ps.v2_new_value +=
+							"<span style='color:green'>" +
+							op.value1[ps.v1_i].replace(/</g, "<").replace(">", ">") +
+							"</span>";
+						ps.v2_new_value +=
+							"<del style='color:red'>" +
+							op.value2[ps.v2_i].replace(/</g, "<").replace(">", ">") +
+							"</del>";
+						ps.v1_i += 1;
+						ps.v2_i += 1;
+
+						if (ps.v1_i >= op.value1.length) {
+							// 值 2 增加的部分
+							ps.v2_new_value +=
+								"<del style='color:red'>" +
+								op.value2
+								.substr(ps.v2_i)
+								.replace(/</g, "<")
+								.replace(">", ">") +
+								"</del>";
+							break;
+						}
+						if (ps.v2_i >= op.value2.length) {
+							// 值 1 删除的部分
+							//ps.v1_new_value += "<span style='" + op.value1_style + "'> 值 1 多的" + op.value1.substr (ps.v1_i).replace (/</g,"<").replace (">",">") + "</span>";
+							ps.v2_new_value +=
+								"<span style='color:green'>" +
+								op.value1
+								.substr(ps.v1_i)
+								.replace(/</g, "<")
+								.replace(">", ">") +
+								"</span>";
+							break;
+						}
+						// 值 1 删除的
+					} else if (ps.v1_eq_max > ps.v2_eq_max) {
+						//ps.v1_new_value += "<span style='" + op.value1_style + "'> 值 1 删除的" + op.value1.substr (ps.v1_i, ps.v1_start - ps.v1_i).replace (/</g,"<").replace (">",">") + "</span>";
+						ps.v2_new_value +=
+							"<span style='color:green'>" +
+							op.value1
+							.substr(ps.v1_i, ps.v1_start - ps.v1_i)
+							.replace(/</g, "<")
+							.replace(">", ">") +
+							"</span>";
+						ps.v1_i = ps.v1_start;
+					} else {
+						// 值 2 增加的
+						ps.v2_new_value +=
+							"<del style='color:red'>" +
+							op.value2
+							.substr(ps.v2_i, ps.v2_start - ps.v2_i)
+							.replace(/</g, "<")
+							.replace(">", ">") +
+							"</del>";
+						ps.v2_i = ps.v2_start;
+					}
+				}
+			}
+			op.value1 = ps.v1_new_value;
+			op.value2 = ps.v2_new_value;
+			// 有多个连着修改的放在一起
+			var addRule = /<del style='color:red'>((?!<del).)+<\/del>/g;
+			var deleteRule = /<span style='color:green'>((?!<span).)+<\/span>/g;
+			var allRule = /(<span style='color:green'>((?!<span).)+<\/span><del style='color:red'>((?!<del).)+<\/del>){2,}/g;
+			op.value2 = op.value2.replace(allRule, function(str) {
+				var beforText = "",
+					afterText = "";
+				var beforeMatch = str.match(deleteRule);
+				for (var i = 0; i < beforeMatch.length; i++) {
+					var m = beforeMatch[i].match(deleteRule);
+					beforText += RegExp.$1;
+				}
+				var afterMatch = str.match(addRule);
+				for (var i = 0; i < afterMatch.length; i++) {
+					var m = afterMatch[i].match(addRule);
+					afterText += RegExp.$1;
+				}
+				return (
+					"<span style='color:green'>" +
+					beforText +
+					"</span><del style='color:red'>" +
+					afterText +
+					"</del>"
+				);
+			});
+			return op;
+		}
+	</script>
+
+</html>
